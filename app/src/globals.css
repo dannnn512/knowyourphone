@@ -513,6 +513,10 @@ em { font-style: normal; color: var(--kp-accent); }
 }
 .kp-error-retry:hover { opacity: 0.92; }
 
+.kp-combo {
+  position: relative;
+  width: 100%;
+}
 .kp-brand-input {
   width: 100%;
   background: var(--kp-surface);
@@ -528,6 +532,42 @@ em { font-style: normal; color: var(--kp-accent); }
 .kp-brand-input:focus {
   border-color: var(--kp-accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--kp-accent) 18%, transparent);
+}
+.kp-combo-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--kp-surface);
+  border: 1px solid var(--kp-border);
+  border-radius: var(--kp-radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  max-height: 256px;
+  overflow-y: auto;
+}
+.kp-combo-option {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--kp-fg);
+  cursor: pointer;
+}
+.kp-combo-option:hover {
+  background: var(--kp-surface-2);
+}
+.kp-combo-option.is-selected {
+  background: color-mix(in oklab, var(--kp-accent) 12%, transparent);
+  font-weight: 600;
+}
+.kp-combo-empty {
+  padding: 8px 12px;
+  color: var(--kp-fg-faint);
+  font-size: 13px;
+  text-align: center;
 }
 
 .kp-r-review { padding: 0 24px; }

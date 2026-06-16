@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { BudgetSlider } from '@/components/ui/BudgetSlider';
 import { UseCard } from '@/components/ui/UseCard';
 import { RowCard } from '@/components/ui/RowCard';
+import { BrandCombobox } from '@/components/ui/BrandCombobox';
 import { SummaryPanel } from './SummaryPanel';
 import type { UserInput, Language } from '@/types';
 import type { Strings } from '@/data/en';
@@ -71,19 +72,12 @@ export function InputForm({ lang, state, onStateChange, onSubmit, t }: InputForm
             <span className="kp-q-num">02</span>
             <h2 className="kp-q-title">{t.q_brand}</h2>
           </div>
-          <input
-            type="text"
-            list="brands"
-            className="kp-brand-input"
+          <BrandCombobox
             value={state.brand}
+            onChange={(v) => update({ brand: v })}
+            options={BRAND_OPTIONS}
             placeholder={t.brand_any}
-            onChange={(e) => update({ brand: e.target.value })}
           />
-          <datalist id="brands">
-            {BRAND_OPTIONS.map((b) => (
-              <option key={b} value={b} />
-            ))}
-          </datalist>
           <p className="kp-q-hint">{t.q_brand_hint}</p>
         </section>
 

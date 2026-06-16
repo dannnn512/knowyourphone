@@ -1,6 +1,6 @@
 import type { UserInput, Recommendation, Language } from '@/types';
 
-export const BUDGET_RANGE = { min: 1_000_000, max: 5_000_000, step: 50_000 };
+export const BUDGET_RANGE = { min: 1_000_000, max: 25_000_000, step: 50_000 };
 
 export function formatRp(n: number): string {
   return 'Rp ' + Math.round(n).toLocaleString('id-ID');

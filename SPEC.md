@@ -30,8 +30,8 @@ Help an Indonesian buyer in the 1.5–3 juta range pick *one* phone they can con
 
 ## Input flow (5 questions, single screen, no scroll on desktop)
 
-1. **Budget** — slider Rp 1–5 juta, snaps to Rp 50,000. Manual type also supported.
-2. **Brand** — searchable native `<input list="brands">` + `<datalist>` autocomplete. **Optional**, defaults to "Apa aja" (Any). Canonical list (locked): Apa aja, Xiaomi, Samsung, OPPO, iPhone, vivo, Realme, Redmi, POCO, Infinix, TECNO, iQOO, itel, Honor, Huawei, ASUS, Motorola, Nokia, Nothing. Free text allowed for resilience (user typing "Samsong" still passes through).
+1. **Budget** — slider Rp 1 juta – Rp 25 juta, snaps to Rp 50,000. Manual type also supported. Sweet spot is 1.5–3 juta (target user) but the model is instructed to match the actual budget, including upper-tier and flagship bands.
+2. **Brand** — custom React combobox with filter, keyboard nav (Enter to confirm, Esc to close), and click-outside dismiss. **Optional**, defaults to "Apa aja" (Any). Canonical list (locked): Apa aja, Xiaomi, Samsung, OPPO, iPhone, vivo, Realme, Redmi, POCO, Infinix, TECNO, iQOO, itel, Honor, Huawei, ASUS, Motorola, Nokia, Nothing. Free text allowed for resilience (user typing "Samsong" still passes through).
 3. **Primary use** — Gaming / Camera / Social & Streaming / Basic / Tough Battery
 4. **Keep duration** — 1–2 yrs / 2–3 yrs / 3+ yrs
 5. **Condition** — New only / Open to secondhand / Secondhand preferred
@@ -42,7 +42,7 @@ Help an Indonesian buyer in the 1.5–3 juta range pick *one* phone they can con
 - Name
 - Price range (IDR)
 - 3 reasoning bullets, generated per `input × phone` (not static)
-- 1 YouTube review URL (real, validated)
+- 1 YouTube review URL when the model has confident training-data knowledge; empty string otherwise (no hallucination)
 - Tokopedia search link, Shopee search link
 - Collapsible full specs: chipset, RAM, storage, battery mAh, camera MP, AnTuTu, display
 
@@ -61,7 +61,7 @@ POST /api/recommend  (Vercel Edge Function)
        │
        ▼
 Gemini 3.5 Flash via @google/genai@2.8.0
-   - System prompt: Indonesian phone advisor, 1.5–3jt target, 5 use cases
+   - System prompt: Indonesian phone advisor, 1.5–3jt sweet spot but accepts any budget 1–25jt, 5 use cases
    - User input (budget, brand, use, keep, condition, lang)
    - responseSchema enforced: { primary, alternates }
    - temperature: 0  (deterministic — same input → same output, byte-identical)
