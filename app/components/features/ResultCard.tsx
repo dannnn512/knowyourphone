@@ -2,21 +2,19 @@ import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { PhonePlaceholder } from '@/components/ui/PhonePlaceholder';
 import { AlternativeCard } from './AlternativeCard';
-import { reasonLines, formatRp } from '@/services/recommend';
-import type { UserInput, Language, Recommendation } from '@/types';
+import { formatRp } from '@/services/recommend';
+import type { Language, Recommendation } from '@/types';
 import type { Strings } from '@/data/en';
 
 interface ResultCardProps {
   recommendation: Recommendation;
-  input: UserInput;
   lang: Language;
   t: Strings;
   onStartOver: () => void;
 }
 
-export function ResultCard({ recommendation, input, lang, t, onStartOver }: ResultCardProps) {
-  const { primary, alts } = recommendation;
-  const reasons = reasonLines(primary, input, lang);
+export function ResultCard({ recommendation, lang, t, onStartOver }: ResultCardProps) {
+  const { primary, alternates } = recommendation;
   const [specsOpen, setSpecsOpen] = useState(false);
 
   let stockLabel = t.inStock;
@@ -24,16 +22,20 @@ export function ResultCard({ recommendation, input, lang, t, onStartOver }: Resu
   if (primary.stock === 'limited') { stockLabel = t.limited; stockClass = 'limited'; }
   if (primary.stock === 'second') { stockLabel = t.checkSecond; stockClass = 'second'; }
 
+  const [lo, hi] = primary.price_idr;
+
   function share() {
     const msg =
       lang === 'id'
-        ? `Halo! Aku baru pakai KnowYourPhone dan rekomendasinya: *${primary.name}* (${formatRp(primary.price[0])} – ${formatRp(primary.price[1])}). Cek juga yuk!`
-        : `Hey! KnowYourPhone matched me with the *${primary.name}* (${formatRp(primary.price[0])} – ${formatRp(primary.price[1])}). Worth a look!`;
+        ? `Halo! Aku baru pakai KnowYourPhone dan rekomendasinya: *${primary.name}* (${formatRp(lo)} – ${formatRp(hi)}). Cek juga yuk!`
+        : `Hey! KnowYourPhone matched me with the *${primary.name}* (${formatRp(lo)} – ${formatRp(hi)}). Worth a look!`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   }
 
   const tokpedUrl = `https://www.tokopedia.com/search?st=product&q=${encodeURIComponent(primary.name)}`;
   const shopeeUrl = `https://shopee.co.id/search?keyword=${encodeURIComponent(primary.name)}`;
+
+  const hasYoutube = !!primary.youtube_url;
 
   return (
     <main className="kp-result" data-screen-label="Result">
@@ -57,7 +59,7 @@ export function ResultCard({ recommendation, input, lang, t, onStartOver }: Resu
       <section className="kp-r-why kp-why">
         <h3 className="kp-why-title">{t.why}</h3>
         <ul className="kp-why-list">
-          {reasons.map((r, i) => (
+          {primary.reasons.map((r, i) => (
             <li key={i}>
               <span className="kp-why-bullet">
                 <Icon name="check" size={11} stroke={3} />
@@ -81,13 +83,31 @@ export function ResultCard({ recommendation, input, lang, t, onStartOver }: Resu
             <div><dt>{t.specsChipset}</dt><dd>{primary.specs.chipset}</dd></div>
             <div><dt>{t.specsRam}</dt><dd>{primary.specs.ram}</dd></div>
             <div><dt>{t.specsStorage}</dt><dd>{primary.specs.storage}</dd></div>
-            <div><dt>{t.specsBattery}</dt><dd>{primary.specs.battery}</dd></div>
-            <div><dt>{t.specsCamera}</dt><dd>{primary.specs.mainCameraMP}</dd></div>
+            <div><dt>{t.specsBattery}</dt><dd>{primary.specs.battery_mah}</dd></div>
+            <div><dt>{t.specsCamera}</dt><dd>{primary.specs.main_camera_mp}</dd></div>
             <div><dt>{t.specsAntutu}</dt><dd>{primary.specs.antutu}</dd></div>
             <div className="kp-specs-full"><dt>{t.specsDisplay}</dt><dd>{primary.specs.display}</dd></div>
           </dl>
         )}
       </section>
+
+      {hasYoutube && (
+        <section className="kp-r-review">
+          <a
+            className="kp-review-link"
+            href={primary.youtube_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="play" size={14} stroke={2} />
+            <span>
+              {lang === 'id' ? 'Lihat review' : 'Watch review'}
+              {primary.youtube_channel ? ` — ${primary.youtube_channel}` : ''}
+            </span>
+            <Icon name="external" size={12} stroke={2} />
+          </a>
+        </section>
+      )}
 
       <div className="kp-r-buy">
         <div className="kp-buy">
@@ -103,7 +123,7 @@ export function ResultCard({ recommendation, input, lang, t, onStartOver }: Resu
         <div className="kp-price-block">
           <div className="kp-price-label">{t.priceRange}</div>
           <div className="kp-price-range">
-            {formatRp(primary.price[0])} – {formatRp(primary.price[1])}
+            {formatRp(lo)} – {formatRp(hi)}
             <span className="kp-price-where"> {t.onTokped}</span>
           </div>
         </div>
@@ -116,8 +136,8 @@ export function ResultCard({ recommendation, input, lang, t, onStartOver }: Resu
       <section className="kp-r-alts kp-alts">
         <h3 className="kp-alts-title">{t.alternatives}</h3>
         <div className="kp-alts-grid">
-          {alts.map((alt) => (
-            <AlternativeCard key={alt.id} alt={alt} primary={primary} lang={lang} t={t} />
+          {alternates.map((alt) => (
+            <AlternativeCard key={alt.id} alt={alt} t={t} />
           ))}
         </div>
       </section>

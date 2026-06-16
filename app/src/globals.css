@@ -482,6 +482,71 @@ em { font-style: normal; color: var(--kp-accent); }
   50% { opacity: 1; transform: scale(1); }
 }
 
+.kp-error {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.kp-error-title {
+  font-family: var(--kp-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--kp-fg);
+  margin: 0;
+}
+.kp-error-body {
+  color: var(--kp-fg-muted);
+  font-size: 14px;
+  max-width: 320px;
+  margin: 0;
+}
+.kp-error-retry {
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: var(--kp-radius-md);
+  background: var(--kp-accent);
+  color: white;
+  border: 0;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.kp-error-retry:hover { opacity: 0.92; }
+
+.kp-brand-input {
+  width: 100%;
+  background: var(--kp-surface);
+  border: 1px solid var(--kp-border);
+  border-radius: var(--kp-radius-md);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--kp-fg);
+  outline: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.kp-brand-input:focus {
+  border-color: var(--kp-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--kp-accent) 18%, transparent);
+}
+
+.kp-r-review { padding: 0 24px; }
+.kp-review-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--kp-surface);
+  border: 1px solid var(--kp-border);
+  border-radius: var(--kp-radius-md);
+  color: var(--kp-fg);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+.kp-review-link:hover { border-color: var(--kp-accent); }
+
 .kp-result-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
   font-size: 11px;

@@ -9,8 +9,8 @@ export interface PhoneSpecs {
   chipset: string;
   ram: string;
   storage: string;
-  battery: string;
-  mainCameraMP: string;
+  battery_mah: string;
+  main_camera_mp: string;
   antutu: string;
   display: string;
 }
@@ -18,23 +18,35 @@ export interface PhoneSpecs {
 export interface Phone {
   id: string;
   name: string;
-  tags: UseCase[];
-  price: [number, number];
-  longevity: number;
-  stock: StockStatus;
-  enReasons: string[];
-  idReasons: string[];
+  tags?: UseCase[];
+  price_idr: [number, number];
   specs: PhoneSpecs;
+  youtube_url: string;
+  youtube_channel: string;
+  stock: StockStatus;
+}
+
+export interface Alternate {
+  id: string;
+  name: string;
+  price_idr: [number, number];
+  better_at: string;
+  trade_off: string;
 }
 
 export interface UserInput {
   budget: number;
+  brand: string;
   use: UseCase | '';
   keep: KeepDuration | '';
   condition: Condition | '';
 }
 
 export interface Recommendation {
-  primary: Phone;
-  alts: [Phone, Phone];
+  primary: Phone & { reasons: string[] };
+  alternates: [Alternate, Alternate];
+}
+
+export interface RecommendationError {
+  error: 'service_unavailable' | 'api_key_missing' | string;
 }

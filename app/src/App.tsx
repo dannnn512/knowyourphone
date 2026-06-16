@@ -9,6 +9,7 @@ import type { UserInput } from '@/types';
 
 const DEFAULT_INPUT: UserInput = {
   budget: 2_000_000,
+  brand: 'Apa aja',
   use: '',
   keep: '',
   condition: '',
@@ -20,7 +21,7 @@ export default function App() {
   const [screen, setScreen] = useState<'input' | 'result'>('input');
   const [formState, setFormState] = useState<UserInput>(DEFAULT_INPUT);
   const [submittedInput, setSubmittedInput] = useState<UserInput | null>(null);
-  const { recommendation, loading } = useRecommendation(submittedInput);
+  const { recommendation, loading, error, retry } = useRecommendation(submittedInput, lang);
 
   function handleSubmit() {
     setSubmittedInput({ ...formState });
@@ -30,6 +31,7 @@ export default function App() {
 
   function handleStartOver() {
     setScreen('input');
+    setSubmittedInput(null);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
@@ -67,10 +69,20 @@ export default function App() {
               </div>
             </main>
           )}
-          {screen === 'result' && !loading && recommendation && submittedInput && (
+          {screen === 'result' && !loading && error && (
+            <main className="kp-result">
+              <div className="kp-error">
+                <h2 className="kp-error-title">{t.error_title}</h2>
+                <p className="kp-error-body">{t.error_body}</p>
+                <button className="kp-error-retry" onClick={retry}>
+                  {t.retry_button}
+                </button>
+              </div>
+            </main>
+          )}
+          {screen === 'result' && !loading && !error && recommendation && (
             <ResultCard
               recommendation={recommendation}
-              input={submittedInput}
               lang={lang}
               t={t}
               onStartOver={handleStartOver}

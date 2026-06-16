@@ -14,6 +14,12 @@ interface InputFormProps {
   t: Strings;
 }
 
+const BRAND_OPTIONS = [
+  'Apa aja', 'Xiaomi', 'Samsung', 'OPPO', 'iPhone', 'vivo', 'Realme',
+  'Redmi', 'POCO', 'Infinix', 'TECNO', 'iQOO', 'itel', 'Honor', 'Huawei',
+  'ASUS', 'Motorola', 'Nokia', 'Nothing',
+] as const;
+
 export function InputForm({ lang, state, onStateChange, onSubmit, t }: InputFormProps) {
   const update = (partial: Partial<UserInput>) => onStateChange({ ...state, ...partial });
   const canSubmit = !!state.use && !!state.keep && !!state.condition;
@@ -63,6 +69,27 @@ export function InputForm({ lang, state, onStateChange, onSubmit, t }: InputForm
         <section className="kp-q">
           <div className="kp-q-head">
             <span className="kp-q-num">02</span>
+            <h2 className="kp-q-title">{t.q_brand}</h2>
+          </div>
+          <input
+            type="text"
+            list="brands"
+            className="kp-brand-input"
+            value={state.brand}
+            placeholder={t.brand_any}
+            onChange={(e) => update({ brand: e.target.value })}
+          />
+          <datalist id="brands">
+            {BRAND_OPTIONS.map((b) => (
+              <option key={b} value={b} />
+            ))}
+          </datalist>
+          <p className="kp-q-hint">{t.q_brand_hint}</p>
+        </section>
+
+        <section className="kp-q">
+          <div className="kp-q-head">
+            <span className="kp-q-num">03</span>
             <h2 className="kp-q-title">{t.q_use}</h2>
           </div>
           <div className="kp-grid-2">
@@ -89,7 +116,7 @@ export function InputForm({ lang, state, onStateChange, onSubmit, t }: InputForm
 
         <section className="kp-q">
           <div className="kp-q-head">
-            <span className="kp-q-num">03</span>
+            <span className="kp-q-num">04</span>
             <h2 className="kp-q-title">{t.q_keep}</h2>
           </div>
           <div className="kp-row-3">
@@ -107,7 +134,7 @@ export function InputForm({ lang, state, onStateChange, onSubmit, t }: InputForm
 
         <section className="kp-q">
           <div className="kp-q-head">
-            <span className="kp-q-num">04</span>
+            <span className="kp-q-num">05</span>
             <h2 className="kp-q-title">{t.q_cond}</h2>
           </div>
           <div className="kp-row-3">

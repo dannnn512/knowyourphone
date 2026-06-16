@@ -1,18 +1,15 @@
 import { Icon } from '@/components/ui/Icon';
 import { PhonePlaceholder } from '@/components/ui/PhonePlaceholder';
-import { compareTo, formatRp } from '@/services/recommend';
-import type { Phone, Language } from '@/types';
+import { formatRp } from '@/services/recommend';
+import type { Alternate } from '@/types';
 import type { Strings } from '@/data/en';
 
 interface AlternativeCardProps {
-  alt: Phone;
-  primary: Phone;
-  lang: Language;
+  alt: Alternate;
   t: Strings;
 }
 
-export function AlternativeCard({ alt, primary, lang, t }: AlternativeCardProps) {
-  const comparison = compareTo(alt, primary, lang);
+export function AlternativeCard({ alt, t }: AlternativeCardProps) {
   const searchUrl = `https://www.tokopedia.com/search?st=product&q=${encodeURIComponent(alt.name)}`;
 
   return (
@@ -25,15 +22,15 @@ export function AlternativeCard({ alt, primary, lang, t }: AlternativeCardProps)
         <dl className="kp-alt-compare">
           <div className="kp-alt-row">
             <dt>{t.betterAt}</dt>
-            <dd>{comparison.better}</dd>
+            <dd>{alt.better_at}</dd>
           </div>
           <div className="kp-alt-row">
             <dt>{t.weakerAt}</dt>
-            <dd>{comparison.worse}</dd>
+            <dd>{alt.trade_off}</dd>
           </div>
         </dl>
         <div className="kp-alt-foot">
-          <span className="kp-alt-price">{formatRp(alt.price[0])}+</span>
+          <span className="kp-alt-price">{formatRp(alt.price_idr[0])}+</span>
           <a
             className="kp-alt-buy"
             href={searchUrl}
