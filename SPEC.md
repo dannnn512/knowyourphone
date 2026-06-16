@@ -8,11 +8,13 @@
 
 ## Wedge
 
-> Tell us about yourself. We'll tell you exactly what to buy — and which YouTube review proves it.
+> Tell us about yourself. We'll tell you exactly what to buy.
+
+*(Original drafting promised "and which YouTube review proves it." Grounding was scoped out mid-sprint when the Gemini API Paid Tier requirement surfaced — IDR 500k Cloud Prepay minimum. The recommendation engine now returns YouTube URLs when the model has confident knowledge and empty strings otherwise. Honest empty > confident hallucination.)*
 
 ## What it is
 
-A *finder*, not a catalog. Indonesian phone-buying decision tool for 18–22-year-olds in the Rp 1.5–3 juta budget band. Answer 4 questions, get 1 primary phone + 2 alternates with grounded reasoning and a real YouTube review URL.
+A *finder*, not a catalog. Indonesian phone-buying decision tool for 18–22-year-olds in the Rp 1.5–3 juta budget band. Answer 5 questions, get 1 primary phone + 2 alternates with grounded reasoning and a real YouTube review URL.
 
 ## The one job it has to do well
 
@@ -26,12 +28,13 @@ Help an Indonesian buyer in the 1.5–3 juta range pick *one* phone they can con
 - Buys on Tokopedia, Shopee, Facebook Marketplace (secondhand)
 - Discovery channels: Indonesian YouTube reviewers (Gadgetin, Jagat Review, Putu Reza), WhatsApp group chats with friends
 
-## Input flow (4 questions, single screen, no scroll on desktop)
+## Input flow (5 questions, single screen, no scroll on desktop)
 
 1. **Budget** — slider Rp 1–5 juta, snaps to Rp 50,000. Manual type also supported.
-2. **Primary use** — Gaming / Camera / Social & Streaming / Basic / Tough Battery
-3. **Keep duration** — 1–2 yrs / 2–3 yrs / 3+ yrs
-4. **Condition** — New only / Open to secondhand / Secondhand preferred
+2. **Brand** — searchable native `<input list="brands">` + `<datalist>` autocomplete. **Optional**, defaults to "Apa aja" (Any). Canonical list (locked): Apa aja, Xiaomi, Samsung, OPPO, iPhone, vivo, Realme, Redmi, POCO, Infinix, TECNO, iQOO, itel, Honor, Huawei, ASUS, Motorola, Nokia, Nothing. Free text allowed for resilience (user typing "Samsong" still passes through).
+3. **Primary use** — Gaming / Camera / Social & Streaming / Basic / Tough Battery
+4. **Keep duration** — 1–2 yrs / 2–3 yrs / 3+ yrs
+5. **Condition** — New only / Open to secondhand / Secondhand preferred
 
 ## Output shape
 
@@ -57,42 +60,44 @@ User submits form (React)
 POST /api/recommend  (Vercel Edge Function)
        │
        ▼
-Gemini 2.5 Flash + Google Search grounding
+Gemini 3.5 Flash via @google/genai@2.8.0
    - System prompt: Indonesian phone advisor, 1.5–3jt target, 5 use cases
-   - User input (budget, use, keep, condition, lang)
-   - Few-shot: 3 examples from fallback set
-   - tools: [{ google_search: {} }]
-   - responseSchema: { primary, alternates }
+   - User input (budget, brand, use, keep, condition, lang)
+   - responseSchema enforced: { primary, alternates }
+   - temperature: 0  (deterministic — same input → same output, byte-identical)
+   - NO Google Search grounding (Paid Tier required, scoped out)
        │
        ▼
 Validate response
    - Schema match
-   - YouTube URL HEAD-check (200 OK)
-   - Price within sane band (10k–20jt)
+   - Exactly 3 reasons in primary
+   - Exactly 2 alternates
+   - price_idr ascending (min <= max) for primary AND each alternate
+   - youtube_url may be empty string (model returns empty when uncertain)
        │
-       ▼
-Return JSON to FE  OR  fall back to hardcoded set
+       ├── Success → return JSON to FE → ResultCard renders
        │
-       ▼
-ResultCard renders
+       └── Failure (timeout, 5xx, malformed, validation) →
+            return 503 { error: "service_unavailable" }
+            FE shows retry UI ("Gemini sedang sibuk, coba lagi")
 ```
 
-**Fallback path:** if Gemini fails (auth error, rate limit, timeout, malformed response, validation fail), return a recommendation matched from the hardcoded `app/data/fallback-phones.json` set (5–6 phones, produced by `phone-researcher`).
+**No static fallback catalog.** Faking a recommendation from a hardcoded list when Gemini is down would repeat the v1 lie at smaller scale. The honest path is a clear error + retry — and document it as a known limitation in the README ("production would add cache + retry-with-backoff").
 
 ## Tech stack
 
 - React 19, Vite 6, TS, Tailwind v4, Bun (frontend)
 - Vercel Edge Functions (the one backend file)
-- Gemini 2.5 Flash via `@google/genai` SDK (or fetch directly)
-- Google Search grounding via Gemini's `google_search` tool (no separate API key)
+- Gemini 3.5 Flash via `@google/genai@2.8.0` (pinned)
+- No grounding — Paid Tier requirement (IDR 500k Cloud Prepay) was scoped out for the assessment; lean on the model's training-data knowledge (early 2025 cutoff)
 
 ## Scope
 
 **In scope for this sprint:**
-- Replace v1 static matching with Gemini-grounded matching
-- Personalized reasoning bullets per submission
-- Real YouTube review URL on every primary recommendation
-- Validated fallback set for graceful degradation
+- Replace v1 static matching with Gemini Flash matching (deterministic, temperature 0)
+- Personalized reasoning bullets per submission, tied to (input × phone) facts
+- YouTube URL surfaced when model has confident knowledge — empty string otherwise (honest empty > hallucination)
+- Clear error UI with retry on Gemini failure (no fake fallback)
 - README in Owen's 8-section format
 - AI usage notes
 - Loom 2–3 min walkthrough
@@ -101,8 +106,9 @@ ResultCard renders
 - Light/dark theme preserved
 
 **Out of scope (deliberately):**
+- **Google Search grounding** — surfaced mid-sprint that grounding requires Gemini API Paid Tier (Cloud Prepay IDR 500k minimum, non-refundable). Scoped out. The first production fix.
 - Affiliate link wiring — Tokopedia/Shopee affiliate accounts take business setup time I don't have in 48hr. Marketplace search links remain as placeholders, documented in README.
-- Real-time price scraping — Gemini grounding is the lightweight equivalent for this sprint.
+- Real-time price scraping — scoped out with grounding. Production path: grounded retrieval via Paid Tier or third-party search API.
 - Auth, user accounts, recommendation history.
 - Brand preference, cicilan, form-factor questions — not in current product knowledge; defer until real user research justifies adding.
 - 5+ recommendations — the product's wedge is decision compression, not lists. Stays at 1+2.
@@ -110,21 +116,21 @@ ResultCard renders
 
 ## Assumptions (where I didn't have data)
 
-1. Gemini Google Search grounding returns Indonesian phone prices within ±10% of Tokopedia/Shopee marketplace reality. Not empirically measured.
-2. The target 18–22 demographic accepts a 3–6 second LLM loading delay (existing loading state handles it).
-3. Indonesian YouTube reviewers (Gadgetin, Jagat Review, Putu Reza) maintain stable archive URLs. If videos are deleted, validation catches dead links and fallback fires.
-4. Gemini free tier rate limits (per minute) are sufficient for assessment-day demo traffic. Production scale needs paid tier.
+1. Gemini 3.5 Flash's training-data knowledge of Indonesian phones (cutoff early 2025) is sufficient for plausible recommendations within the 1.5–3jt band. Prices and model names may be 6–18 months stale; production fix is grounded retrieval.
+2. The 18–22 demographic accepts the measured ~11s loading delay if the loading copy sets honest expectations. Production path: reduce prompt size, parallelize, or move to faster grounded provider.
+3. YouTube URLs returned from training-data knowledge may not match currently-live videos. The model is instructed to return empty when uncertain rather than hallucinate.
+4. Free Tier rate limits (10 RPM / ~500 RPD for gemini-3.5-flash) are sufficient for assessment-day demo traffic.
 
 ## Success criteria
 
 - **Functional:** Different inputs produce different recommendations (proves matching works — fixes the documented v1 bug).
 - **Determinism:** Same input twice produces a stable primary recommendation with same Gemini params (set `temperature: 0.2`).
-- **Grounding:** YouTube URL in result resolves to a real video (HEAD check passes).
+- **Reasoning quality:** Each of the 3 primary reasons references a specific (input × phone) fact, not generic praise. (Manually inspected.)
 - **End-to-end:** Marketplace search links open with phone name pre-filled.
 - **DoD:** Live URL works on a fresh device. Repo runs from README. Submitted before Wed 10am.
 
 ## Open items (for spec-writer to interview Ziddan on)
 
-- Hardcoded fallback set: how many phones? (Proposed: 6.)
-- Few-shot examples in the runtime prompt: same as fallback set, or a curated subset?
+- Exact Gemini model identifier (verify in AI Studio — `gemini-3.5-flash` if available, else current Flash).
+- Retry UX copy in EN/ID — "Gemini sedang sibuk, coba lagi" vs alternatives.
 - Telemetry: log inputs and recommendations anonymously for prompt tuning? (Recommended yes, but out of scope for v2 unless trivial.)

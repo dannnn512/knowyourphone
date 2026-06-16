@@ -12,13 +12,14 @@ I also used Claude as a mirror on bad calls. When I proposed a 6-agent roster (m
 
 ### 2. Multi-agent orchestration (Claude Code CLI)
 
-Three sub-agents, each with a mutually exclusive trigger and tool scoping:
+Two sub-agents, each with a mutually exclusive trigger and tool scoping:
 
-- **`phone-researcher`** (Gemini-backed via WebFetch, parallel fan-out, Haiku model) — produced the vetted fallback phone set with current prices and validated YouTube URLs. Six phones in parallel finished in ~8 minutes instead of ~60 serially.
 - **`spec-writer`** (Sonnet, Read/Write only) — interviewed me at the start of Tuesday and produced `SPEC.md` so implementer code had an unambiguous contract.
-- **`code-reviewer`** (Sonnet, read-only — Read/Grep/Glob/Bash) — cold-read the diff before deploy. Caught [TODO: fill in specifically what it caught during the build].
+- **`code-reviewer`** (Sonnet, read-only — Read/Grep/Glob/Bash) — cold-read the edge function diff after Chunk 1. Returned a mix of real findings (unpinned `@google/genai` version, missing `price_idr[0] <= price_idr[1]` validation, tightening the error-log path) and one confidently-wrong CRITICAL flagging the model identifier — see the "one place AI got something wrong" section below. The accepted findings became three small commits before Chunk 2; the wrong-CRITICAL became the most useful story in this document.
 
-Each agent file is in `.claude/agents/` if you want to see how tool scoping and triggers were set up.
+Worth flagging: my roster started at **three** sub-agents. I had a `phone-researcher` agent designed to build a vetted fallback phone set (with current prices and validated YouTube URLs). I cut it after Ziddan pushed back on the fallback architecture itself — once the runtime moved to pure Gemini grounding with no static fallback, `phone-researcher` had no job left this sprint. Discipline over multi-agent theater. Owen, if you're curious: the deleted agent's design is recoverable from `git log`.
+
+Each remaining agent file is in `.claude/agents/` if you want to see how tool scoping and triggers were set up.
 
 ### 3. Runtime AI inside the product itself
 
@@ -28,12 +29,16 @@ This was the single most important architectural decision. v1 of KnowYourPhone h
 
 ## One place AI got something wrong that I caught
 
-[TODO: fill in during build. Strong candidates to look out for:
-- Gemini hallucinating a phone model name or YouTube URL that doesn't exist (fallback path or HEAD check catches this — note the specific case)
-- Claude proposing a backend service I cut because it was scope creep
-- An agent over-formatting copy with bullet lists where conversational prose was the v1 tone
-- Catalog data with a wrong price point that didn't match marketplace reality
-Be specific — exact moment, what Claude/Gemini said, what was wrong, what I did instead.]
+While building the Gemini edge function, I invoked the `code-reviewer` sub-agent to cold-read `app/api/recommend.ts` before moving to the frontend. It came back with a CRITICAL severity flagging `gemini-3.5-flash` as a non-existent model identifier — citing training-data priors about the Gemini 1.5/2.0 Flash naming era.
+
+I rejected the finding with two pieces of evidence:
+
+1. The `@google/genai@2.8.0` type definitions, which already had the right surface for the new model.
+2. A live HTTP 200 smoke test I had just run using that exact model string, which returned a valid structured response in 10.9s.
+
+The wrong-CRITICAL got caught in exactly the orchestrator loop the multi-agent playbook describes — sub-agent isolation surfaced a divergent opinion, and I adjudicated with evidence rather than deferring to the sub-agent's confidence.
+
+The takeaway: sub-agent CRITICALs are *hypotheses, not conclusions.* They're useful precisely because they disagree with the main session, but every one needs human evidence-checking before action. If I'd silently downgraded the model to `gemini-2.0-flash` because a sub-agent said so, I'd have made the product worse for no reason.
 
 ## Honest scope of AI usage
 

@@ -9,13 +9,13 @@ You are the orchestrator for KnowYourPhone, an Indonesian phone **finder** (not 
 ## Stack
 - React 19, Vite 6, TypeScript, Tailwind v4, Bun
 - Vercel deploy (static frontend + Edge Functions)
-- Gemini 2.5 Flash with Google Search grounding (single API, runs in `app/api/recommend.ts`)
+- Gemini 3.5 Flash via `@google/genai@2.8.0` (pinned), runs in `app/api/recommend.ts`. NO Google Search grounding — Paid Tier requirement (IDR 500k Cloud Prepay) was scoped out for the assessment.
 - App code lives at `app/`; meta-docs, specs, and agent config at repo root
 
 ## Layout
 - `app/components/ui` — pure presentational
 - `app/components/features` — InputForm, ResultCard, AlternativeCard, etc.
-- `app/data` — i18n only (`en.ts`, `id.ts`). The static `phones.ts` is **DEPRECATED** — recommendations come from the edge function. Keep it temporarily as a fallback source if needed, mark with a comment.
+- `app/data` — i18n only (`en.ts`, `id.ts`). The static `phones.ts` is **DEPRECATED** — recommendations come exclusively from the edge function. Delete `phones.ts` once `useRecommendation` is migrated to fetch.
 - `app/services/recommend.ts` — becomes a thin `fetch('/api/recommend', ...)` wrapper
 - `app/hooks/useRecommendation.ts` — now async fetch with loading/error states
 - `app/api/recommend.ts` — the Vercel edge function (Gemini + Google Search grounding)
@@ -23,9 +23,12 @@ You are the orchestrator for KnowYourPhone, an Indonesian phone **finder** (not 
 
 ## Guardrails (do not violate)
 
-1. **Never invent phone prices or YouTube URLs.** All data flows through Gemini with Google Search grounding, OR through the hardcoded fallback set produced by `phone-researcher`. Anything else is a bug.
+1. **Never invent phone prices or YouTube URLs.** The Gemini Flash call is ungrounded (training-data only). The model is explicitly instructed to return empty `youtube_url` when uncertain rather than hallucinate. If Gemini fails (auth, timeout, malformed, validation), the app returns a 503 + retry button — it never fakes a recommendation from a hardcoded list. No few-shot examples; structure is enforced by `responseSchema` only.
 2. **One backend, one deployment.** The runtime AI lives in a single Vercel edge function. Do not introduce a separate BE service, no Express/Hono server, no second deployment.
-3. **The 4 questions are locked:** budget, primary use, keep duration, condition. Do not add brand-preference, cicilan, or form-factor for this sprint.
+3. **The 5 questions are locked:** budget, brand, primary use, keep duration, condition. Brand is OPTIONAL with "Apa aja" (Any) as the default. Free text allowed in the brand input for resilience. Do not add cicilan or form-factor for this sprint.
+
+   Canonical brand list (use exactly these strings in datalist, in this order):
+   Apa aja, Xiaomi, Samsung, OPPO, iPhone, vivo, Realme, Redmi, POCO, Infinix, TECNO, iQOO, itel, Honor, Huawei, ASUS, Motorola, Nokia, Nothing.
 4. **Keep 1 primary + 2 alternates.** Do not expand to 5. The product is decision compression, not a list.
 5. **5 use cases, locked:** gaming, camera, social, basic, tough. No additions.
 6. **Do not commit changes to `.claude/agents/*.md` without showing the diff to Ziddan first.** Those files define agent behavior.
@@ -40,9 +43,11 @@ You are the orchestrator for KnowYourPhone, an Indonesian phone **finder** (not 
 
 ## Workflow
 1. `spec-writer` produces/updates `SPEC.md` from interview.
-2. `phone-researcher` builds the vetted fallback set in `app/data/fallback-phones.json` (used as both runtime degradation path and few-shot prompt context).
-3. Main session implements the edge function, the FE wiring, and the UI updates.
-4. `code-reviewer` runs cold on the diff before deploy.
+2. Main session implements the edge function (Gemini call), FE wiring (`useRecommendation` → fetch, `services/recommend.ts` → fetch wrapper), and UI updates (`ResultCard` renders YouTube URL, retry UI on error).
+3. `code-reviewer` runs cold on the diff before deploy.
+
+## Roster note
+The roster started at 3 sub-agents (spec-writer, phone-researcher, code-reviewer). `phone-researcher` was cut once the architecture moved to pure Gemini grounding with no static fallback — it had no job left this sprint. Honest minimalism over multi-agent theater.
 
 ## Deadline
 Submit by **Wed Jun 17 2026, 10:00 AM** (Owen / Pixel8Labs assessment). Every trade-off is against this deadline.
