@@ -1,0 +1,31 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies (app/ is the actual Vite project)
+app/node_modules/
+app/dist/
+app/.next/
+app/tsconfig.tsbuildinfo
+
+# Env vars (NEVER commit Gemini key)
+app/.env
+app/.env.local
+app/.env.*.local
+
+# Claude
+.claude/settings.local.json
+
+# Vercel
+.vercel/
